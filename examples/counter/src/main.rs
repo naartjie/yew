@@ -15,9 +15,8 @@ struct Model {
 }
 
 enum Msg {
-    Increment,
-    Decrement,
-    Bulk(Vec<Msg>),
+    Delta(i64),
+    Reset,
 }
 
 impl Component<Context> for Model {
@@ -32,18 +31,21 @@ impl Component<Context> for Model {
 
     fn update(&mut self, msg: Self::Msg, context: &mut Env<Context, Self>) -> ShouldRender {
         match msg {
-            Msg::Increment => {
-                self.value = self.value + 1;
-                context.console.log("plus one");
+            Msg::Reset => {
+                self.value = 0;
+                context.console.log("resetting to 0");
             }
-            Msg::Decrement => {
-                self.value = self.value - 1;
-                context.console.log("minus one");
-            }
-            Msg::Bulk(list) => {
-                for msg in list {
-                    self.update(msg, context);
-                }
+            Msg::Delta(delta) => {
+                let old = self.value;
+                self.value += delta;
+                let sign = if delta > 0 {"+"} else {""};
+                let msg = format!("value changed by {sign}{delta}, [old: {old}, new: {new}]",
+                    delta = delta,
+                    old = old,
+                    new = self.value,
+                    sign = sign
+                );
+                context.console.log(&msg);
             }
         }
         true
@@ -55,9 +57,10 @@ impl Renderable<Context, Model> for Model {
         html! {
             <div>
                 <nav class="menu",>
-                    <button onclick=|_| Msg::Increment,>{ "Increment" }</button>
-                    <button onclick=|_| Msg::Decrement,>{ "Decrement" }</button>
-                    <button onclick=|_| Msg::Bulk(vec!(Msg::Increment, Msg::Increment)),>{ "Increment Twice" }</button>
+                    <button onclick=|_| Msg::Reset,>{ "Reset" }</button>
+                    <button onclick=|_| Msg::Delta(1),>{ "Increment" }</button>
+                    <button onclick=|_| Msg::Delta(-1),>{ "Decrement" }</button>
+                    <button onclick=|_| Msg::Delta(2),>{ "Increment Twice" }</button>
                 </nav>
                 <p>{ self.value }</p>
                 <p>{ Local::now() }</p>
